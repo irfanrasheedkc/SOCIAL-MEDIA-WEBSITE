@@ -4,6 +4,8 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
+var db=require('./config/connection.js');
+
 var indexRouter = require('./routes/index');
 var apiRouter = require('./routes/api');
 
@@ -36,6 +38,14 @@ app.use('/api', apiRouter);
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   next(createError(404));
+});
+
+// connect with database
+db.connect((err)=>{
+  if(err)
+    console.log("Connection error"+err)    
+  else
+    console.log("Database connected to port 27017");
 });
 
 // error handler
