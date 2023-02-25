@@ -4,7 +4,8 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 const mongoose = require('mongoose')
-
+// Set the strictQuery option to false to prepare for the upcoming change
+mongoose.set('strictQuery', false);
 const upload = require('express-fileupload')
 
 
@@ -59,13 +60,13 @@ mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true }, (err)
 })
 
 const userSchema = new mongoose.Schema({
-  id:String , 
-  name:String , 
-  email:String ,
-  password:String
+  id: String,
+  name: String,
+  email: String,
+  password: String
 });
 
-module.exports.users = new mongoose.model("Users" , userSchema);
+module.exports.users = new mongoose.model("Users", userSchema);
 
 const ImageSchema = new mongoose.Schema({
   name: {
@@ -84,13 +85,33 @@ const ImageSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  uid:{
+  uid: {
     type: ObjectId,
     required: true
   }
 });
 
 module.exports.images = mongoose.model('Images', ImageSchema);
+
+const postSchema = new mongoose.Schema({
+  description: {
+    type: String,
+    required: true
+  },
+  userId: {
+    type: String,
+    ref: 'Users',
+    required: true
+  },
+  datetime: {
+    type: Date,
+    default: Date.now() - (5.5 * 60 * 60 * 1000) // adjust to Indian time zone
+  }
+});
+
+const Post = mongoose.model('Post', postSchema);
+
+module.exports.posts = new mongoose.model("Posts", postSchema);
 
 // error handler
 app.use(function (err, req, res, next) {

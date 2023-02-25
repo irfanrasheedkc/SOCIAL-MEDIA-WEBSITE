@@ -5,6 +5,21 @@ const collection = require('../config/collection')
 const bcrypt = require('bcrypt');
 
 var objectId = require('mongodb').ObjectId
+require('dotenv').config()
+
+const nodemailer = require('nodemailer');
+
+let transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.TELLUS_EMAIL,
+        pass: process.env.TELLUS_PASSWORD
+    }
+});
+
+
+
+
 
 module.exports = {
     doSignup: async (userData, imageData) => {
@@ -28,6 +43,21 @@ module.exports = {
                 }
             });
         }
+        let mailOptions = {
+            from: process.env.TELLUS_EMAIL,
+            to: result.email,
+            subject: 'Tellus Signup success',
+            text: 'Hello, ' + result.name + ' ,\n' +
+                'Signup success....Welcome to tellus community'
+        };
+
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                console.log(error);
+            } else {
+                console.log('Email sent: ' + info.response);
+            }
+        });
         return result;
     },
     doLogin: async (userData) => {
@@ -50,7 +80,7 @@ module.exports = {
             async function getImage(x) {
                 try {
                     const image = await new Promise((resolve, reject) => {
-                        db.images.findOne({ uid: x }, 'data', function (err, image) {
+                        db.images.findOne({ uid: x }, { 'data': 1, 'mimetype': 1 }, function (err, image) {
                             if (err) {
                                 console.log(err);
                                 reject(err);
@@ -76,5 +106,27 @@ module.exports = {
 
 
 
+    },
+    doPost: async (postData, imageData) => {
+        const result = await db.posts.create(postData)
+        if (imageData) {
+            imageData = imageData.image
+            const newImage = new db.images({
+                name: imageData.name,
+                data: imageData.data,
+                mimetype: imageData.mimetype,
+                size: imageData.size,
+                uid: result._id
+            });
+
+            newImage.save((err, savedImage) => {
+                if (err) {
+                    console.log('Error saving image:', err);
+                } else {
+                    console.log('Image saved successfully:', savedImage);
+                }
+            });
+        }
+        return "hello";
     },
 }

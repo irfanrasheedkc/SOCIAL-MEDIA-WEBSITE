@@ -22,8 +22,8 @@ router.post('/signup',  function (req, res) {
 router.post('/login', function (req, res) {
   userHelpers.doLogin(req.body).then((response) => {
     let result = {...response};
-    // let result  = [response].map(user=>user.toObject({gutter:true}));
     result.login = true;
+    delete response._doc.password;
     console.log(result);
     if(response)
       res.json(result);
@@ -32,5 +32,19 @@ router.post('/login', function (req, res) {
   })
 })
 
+router.post('/post', function (req, res) {
+  console.log(req.body)
+  userHelpers.doPost(req.body , req.files).then((response) => {
+    res.json({"post":true})
+  //   if(response)
+  //   {
+  //     response.post = true;
+  //     res.json(response);
+  //   }
+  //   else
+  //     res.json({"post":false})
+  })
+})
 
-module.exports = router;
+
+module.exports = router
