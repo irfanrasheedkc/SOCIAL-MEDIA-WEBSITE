@@ -60,7 +60,7 @@ mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true }, (err)
 })
 
 const userSchema = new mongoose.Schema({
-  id: String,
+  id: { type: String, unique: true },
   name: String,
   email: String,
   password: String
@@ -98,18 +98,21 @@ const postSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  userId: {
+  location: {
+    type: String,
+    required: true
+  },
+  userid: {
     type: String,
     ref: 'Users',
     required: true
   },
   datetime: {
     type: Date,
-    default: Date.now() - (5.5 * 60 * 60 * 1000) // adjust to Indian time zone
+    default: Date.now
   }
 });
 
-const Post = mongoose.model('Post', postSchema);
 
 module.exports.posts = new mongoose.model("Posts", postSchema);
 

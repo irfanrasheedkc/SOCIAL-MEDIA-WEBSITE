@@ -18,13 +18,25 @@ let transporter = nodemailer.createTransport({
 });
 
 
-
-
-
 module.exports = {
     doSignup: async (userData, imageData) => {
         userData.password = await bcrypt.hash(userData.password, 10);
-        const result = await db.users.create(userData)
+        
+        try {
+            const result = await db.users.create(userData)
+          } catch (error) {
+            // Check if the error is a duplicate key error
+            if (error.code === 11000) {
+              console.error('Duplicate key error:', error.keyValue);
+              return false;
+              // Handle the error here
+            } else {
+              // Handle other types of errors
+              console.error(error);
+              return false;
+            }
+          }
+          
         if (imageData) {
             imageData = imageData.image
             const newImage = new db.images({
@@ -99,6 +111,7 @@ module.exports = {
 
             image = await getImage(x);
             user.image = image;
+            console.log(image)
             return user;
         } else {
             return null;
@@ -118,15 +131,56 @@ module.exports = {
                 size: imageData.size,
                 uid: result._id
             });
-
             newImage.save((err, savedImage) => {
                 if (err) {
                     console.log('Error saving image:', err);
+                    return false;
                 } else {
                     console.log('Image saved successfully:', savedImage);
+                    return true;
                 }
             });
         }
-        return "hello";
+        return result;
     },
+    getPost: async () => {
+        const result = await db.posts.aggregate([
+            {
+                $lookup: {
+                    from: 'images',
+                    localField: '_id',
+                    foreignField: 'uid',
+                    as: 'images'
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    description: 1,
+                    location: 1,
+                    userid: 1,
+                    datetime: 1,
+                    images: {
+                        data: 1,
+                        mimetype: 1
+                    }
+                }
+            },
+            {
+                $sort: {
+                    datetime: -1
+                }
+            }
+        ]).exec();
+
+        if (result) {
+            console.log(result[0].images);
+            return result;
+        } else {
+            console.log("Error retrieving posts with images");
+            return null;
+        }
+
+
+    }
 }
