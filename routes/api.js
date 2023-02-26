@@ -26,7 +26,7 @@ router.post('/login', function (req, res) {
   userHelpers.doLogin(req.body).then((response) => {
     let result = { ...response };
     result.login = true;
-
+    console.log(result)
     if (result._doc && result._doc.password) {
       delete result._doc.password;
     }

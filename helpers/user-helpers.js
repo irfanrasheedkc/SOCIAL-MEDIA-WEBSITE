@@ -21,22 +21,22 @@ let transporter = nodemailer.createTransport({
 module.exports = {
     doSignup: async (userData, imageData) => {
         userData.password = await bcrypt.hash(userData.password, 10);
-        
+
         try {
             const result = await db.users.create(userData)
-          } catch (error) {
+        } catch (error) {
             // Check if the error is a duplicate key error
             if (error.code === 11000) {
-              console.error('Duplicate key error:', error.keyValue);
-              return false;
-              // Handle the error here
+                console.error('Duplicate key error:', error.keyValue);
+                return false;
+                // Handle the error here
             } else {
-              // Handle other types of errors
-              console.error(error);
-              return false;
+                // Handle other types of errors
+                console.error(error);
+                return false;
             }
-          }
-          
+        }
+
         if (imageData) {
             imageData = imageData.image
             const newImage = new db.images({
@@ -155,7 +155,7 @@ module.exports = {
             },
             {
                 $project: {
-                    _id: 0,
+                    _id: 1,
                     description: 1,
                     location: 1,
                     userid: 1,
@@ -174,8 +174,16 @@ module.exports = {
         ]).exec();
 
         if (result) {
-            console.log(result[0].images);
-            return result;
+            let response = result.slice();
+            for (let i = 0; i < response.length; i++) {
+                const object = response[i];
+                id = object.userid;
+                let _id = await db.users.findOne({ id }, { _id: 1 });
+                uid = _id._id
+                let image = await db.images.findOne({ uid }, { _id: 0, data: 1, mimetype: 1 });
+                response[i].userImage = image
+            }
+            return response;
         } else {
             console.log("Error retrieving posts with images");
             return null;
