@@ -14,7 +14,6 @@ router.get('/', function (req, res, next) {
 
 router.post('/signup', function (req, res) {
   userHelpers.doSignup(req.body, req.files).then((response) => {
-    console.log(response)
     if(response==false)
       res.json({"signup" : false})
     else
@@ -26,7 +25,6 @@ router.post('/login', function (req, res) {
   userHelpers.doLogin(req.body).then((response) => {
     let result = { ...response };
     result.login = true;
-    console.log(result)
     if (result._doc && result._doc.password) {
       delete result._doc.password;
     }
@@ -39,7 +37,6 @@ router.post('/login', function (req, res) {
 })
 
 router.post('/post', function (req, res) {
-  console.log(req.body)
   userHelpers.doPost(req.body, req.files).then((response) => {
     // console.log(response)
     // response.post = true;
@@ -60,5 +57,17 @@ router.get('/post', function (req, res) {
   })
 })
 
+router.get('/profile/:userId' , function(req , res){
+  userHelpers.getUserPost(req.params.userId).then((response)=>{
+    res.json(response)
+  })
+})
 
+router.post('/like' , function(req , res){
+  console.log(req.body);
+  userHelpers.postLike(req.body.userid , req.body.postid).then((response)=>{
+    console.log("resp is" , response)
+    res.json({"like":response})
+  })
+})
 module.exports = router

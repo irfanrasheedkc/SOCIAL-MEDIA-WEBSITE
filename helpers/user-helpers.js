@@ -21,7 +21,6 @@ let transporter = nodemailer.createTransport({
 module.exports = {
     doSignup: async (userData, imageData) => {
         userData.password = await bcrypt.hash(userData.password, 10);
-
         try {
             const result = await db.users.create(userData)
         } catch (error) {
@@ -39,12 +38,12 @@ module.exports = {
 
         if (imageData) {
             imageData = imageData.image
-            const newImage = new db.images({
+            const newImage = new db.profiles({
                 name: imageData.name,
                 data: imageData.data,
                 mimetype: imageData.mimetype,
                 size: imageData.size,
-                uid: result._id
+                userid: userData.id
             });
 
             newImage.save((err, savedImage) => {
@@ -57,9 +56,9 @@ module.exports = {
         }
         let mailOptions = {
             from: process.env.TELLUS_EMAIL,
-            to: result.email,
+            to: userData.email,
             subject: 'Tellus Signup success',
-            text: 'Hello, ' + result.name + ' ,\n' +
+            text: 'Hello, ' + userData.name + ' ,\n' +
                 'Signup success....Welcome to tellus community'
         };
 
@@ -70,7 +69,7 @@ module.exports = {
                 console.log('Email sent: ' + info.response);
             }
         });
-        return result;
+        return userData;
     },
     doLogin: async (userData) => {
         async function authenticateUser(username, password) {
@@ -88,11 +87,11 @@ module.exports = {
         let user = await authenticateUser(userData.id, userData.password);
         if (user) {
             // Find the user by their id and retrieve only the 'name' field
-            const x = user._id
+            const x = user.id
             async function getImage(x) {
                 try {
                     const image = await new Promise((resolve, reject) => {
-                        db.images.findOne({ uid: x }, { 'data': 1, 'mimetype': 1 }, function (err, image) {
+                        db.profiles.findOne({ userid: x }, { 'data': 1, 'mimetype': 1 }, function (err, image) {
                             if (err) {
                                 console.log(err);
                                 reject(err);
@@ -109,9 +108,8 @@ module.exports = {
                 }
             }
 
-            image = await getImage(x);
+            image = await getImage(user.id);
             user.image = image;
-            console.log(image)
             return user;
         } else {
             return null;
@@ -154,6 +152,60 @@ module.exports = {
                 }
             },
             {
+                $lookup: {
+                    from: 'profiles',
+                    localField: 'userid',
+                    foreignField: 'userid',
+                    as: 'userImage'
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    description: 1,
+                    location: 1,
+                    userid: 1,
+                    datetime: 1,
+                    images: {
+                        data: 1,
+                        mimetype: 1
+                    },
+                    userImage: {
+                        data: 1,
+                        mimetype: 1
+                    }
+                }
+            },
+            {
+                $sort: {
+                    datetime: -1
+                }
+            }
+        ]).exec();
+
+        if (result) {
+            return result;
+        } else {
+            console.log("Error retrieving posts with images");
+            return null;
+        }
+    },
+    getUserPost: async (userId) => {
+        const result = await db.posts.aggregate([
+            {
+                $match: {
+                    userid: userId
+                }
+            },
+            {
+                $lookup: {
+                    from: 'images',
+                    localField: '_id',
+                    foreignField: 'uid',
+                    as: 'images'
+                }
+            },
+            {
                 $project: {
                     _id: 1,
                     description: 1,
@@ -174,21 +226,37 @@ module.exports = {
         ]).exec();
 
         if (result) {
-            let response = result.slice();
-            for (let i = 0; i < response.length; i++) {
-                const object = response[i];
-                id = object.userid;
-                let _id = await db.users.findOne({ id }, { _id: 1 });
-                uid = _id._id
-                let image = await db.images.findOne({ uid }, { _id: 0, data: 1, mimetype: 1 });
-                response[i].userImage = image
-            }
-            return response;
+            return result;
         } else {
             console.log("Error retrieving posts with images");
             return null;
         }
-
-
-    }
+    },
+    postLike: async (userId, postId) => {
+        try {
+          const post = await db.posts.findOne({ _id: objectId(postId) });
+          if (!post) {
+            console.log("no post found")
+            return null;
+          } else {
+            const index = post.likes.indexOf(userId);
+            let res;
+            if (index === -1) {
+              post.likes.push(userId);
+              res = 1;
+            } else {
+              post.likes.splice(index, 1);
+              res = 0;
+            }
+            const updatedPost = await post.save();
+            console.log("response is ",res);
+            return res;
+          }
+        } catch (err) {
+          console.log(err)
+          return null;
+        }
+        return post;
+      }
+      
 }

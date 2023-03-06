@@ -110,11 +110,40 @@ const postSchema = new mongoose.Schema({
   datetime: {
     type: Date,
     default: Date.now
+  },
+  likes: {
+    type: [String],
+    default: []
   }
 });
 
 
 module.exports.posts = new mongoose.model("Posts", postSchema);
+
+const profileSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true
+  },
+  data: {
+    type: Buffer,
+    required: true
+  },
+  mimetype: {
+    type: String,
+    required: true
+  },
+  size: {
+    type: Number,
+    required: true
+  },
+  userid: {
+    type: String,
+    required: true
+  }
+});
+
+module.exports.profiles = new mongoose.model("Profiles", profileSchema);
 
 // error handler
 app.use(function (err, req, res, next) {
