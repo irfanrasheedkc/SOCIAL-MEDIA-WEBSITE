@@ -51,8 +51,9 @@ router.post('/post', function (req, res) {
   })
 })
 
-router.get('/post', function (req, res) {
-  userHelpers.getPost().then((response) => {
+router.get('/post/:userId', function (req, res) {
+  console.log(req.params.userId)
+  userHelpers.getPost(req.params.userId).then((response) => {
     res.json(response)
   })
 })
@@ -64,9 +65,8 @@ router.get('/profile/:userId' , function(req , res){
 })
 
 router.post('/like' , function(req , res){
-  console.log(req.body);
+  console.log(req.body.userid)
   userHelpers.postLike(req.body.userid , req.body.postid).then((response)=>{
-    console.log("resp is" , response)
     res.json({"like":response})
   })
 })

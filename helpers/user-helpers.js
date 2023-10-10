@@ -141,7 +141,7 @@ module.exports = {
         }
         return result;
     },
-    getPost: async () => {
+    getPost: async (userId) => {
         const result = await db.posts.aggregate([
             {
                 $lookup: {
@@ -173,6 +173,12 @@ module.exports = {
                     userImage: {
                         data: 1,
                         mimetype: 1
+                    },
+                    like: {
+                        $in: [userId, "$likes"]
+                    },
+                    likecount:{
+                        $size: '$likes'
                     }
                 }
             },
@@ -242,14 +248,14 @@ module.exports = {
             const index = post.likes.indexOf(userId);
             let res;
             if (index === -1) {
-              post.likes.push(userId);
-              res = 1;
+              count = post.likes.push(userId);
+              console.log(count);
+              res = true;
             } else {
               post.likes.splice(index, 1);
-              res = 0;
+              res = false;
             }
             const updatedPost = await post.save();
-            console.log("response is ",res);
             return res;
           }
         } catch (err) {
@@ -258,5 +264,4 @@ module.exports = {
         }
         return post;
       }
-      
 }
